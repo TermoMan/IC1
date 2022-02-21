@@ -1,10 +1,8 @@
-#Snake Tutorial Python
-
 import random
 import pygame
 
-class objetive(object):
 
+class objetive(object):
 
     def __init__(self, start, color=(255, 0, 0)):
         self.pos = start
@@ -19,6 +17,7 @@ class objetive(object):
         i = self.pos[0]
         j = self.pos[1]
         pygame.draw.rect(surface, self.color, (i * dis + 1, j * dis + 1, dis - 2, dis - 2))
+
 
 class obstacle(object):
 
@@ -40,9 +39,7 @@ class origin(object):
         self.color = color
         self.pos = pos
 
-
-
-    def draw(self, surface, eyes = True):
+    def draw(self, surface, eyes=True):
         global rows, columns, width, height
         dis = width // rows
         i = self.pos[0]
@@ -56,12 +53,11 @@ class origin(object):
             pygame.draw.circle(surface, (0, 0, 0), circleMiddle, radius)
             pygame.draw.circle(surface, (0, 0, 0), circleMiddle2, radius)
 
-    def move (self, pos):
+    def move(self, pos):
         self.pos = pos
 
 
-
-def drawGrid(w, rows, columns ,surface):
+def drawGrid(w, rows, columns, surface):
     sizeBtwn = w // rows
 
     x = 0
@@ -71,7 +67,6 @@ def drawGrid(w, rows, columns ,surface):
         x = x + sizeBtwn
         pygame.draw.line(surface, (255, 255, 255), (x, 0), (x, w))
 
-
     pygame.draw.line(surface, (255, 255, 255), (0, y), (w, y))
     for l in range(columns):
         y = y + sizeBtwn
@@ -80,10 +75,8 @@ def drawGrid(w, rows, columns ,surface):
     pygame.draw.line(surface, (255, 255, 255), (0, y), (w, y))
 
 
-
-
 def redrawWindow(surface):
-    global rows, width, columns,  origin, objetive, list_obs, start, quit, ori_btn, obj_btn, obs_btn
+    global rows, width, columns, origin, objetive, list_obs, start, quit, ori_btn, obj_btn, obs_btn
 
     surface.fill((0, 0, 0))
     origin.draw(surface)
@@ -106,8 +99,7 @@ def redrawWindow(surface):
     pygame.draw.rect(surface, (100, 100, 100), obs_btn)
     surface.blit(pygame.font.SysFont('calibri', 20).render("Obstacle", 1, (0, 0, 0)), (width + 30, 165))
 
-
-    drawGrid(width, rows, columns,  surface)
+    drawGrid(width, rows, columns, surface)
     pygame.display.update()
 
 
@@ -115,7 +107,6 @@ def randomPos(rows, columns):
     x = random.randrange(rows)
     y = random.randrange(columns)
     return x, y
-
 
 
 def main():
