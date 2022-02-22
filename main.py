@@ -1,5 +1,6 @@
 import random
 import pygame
+import math
 
 
 class objetive(object):
@@ -107,6 +108,37 @@ def randomPos(rows, columns):
     x = random.randrange(rows)
     y = random.randrange(columns)
     return x, y
+
+
+def g(route, n):
+    sum = 0
+    for r in route:
+
+
+
+def h(dest, n):
+    return dist(dest, n)
+
+
+def f(n):
+    return g(n) + h(n)
+
+def dist (a, b):
+    math.sqrt((a[0]-b[0])**2 + (a[1]-a[1])**2)
+def aEstrella(origin, objective, list_obs):
+    abierta = [origin]
+    cerrada = list_obs
+
+
+def zeldasValidas(act, cerradas):
+    global rows, columns
+    validas = []
+    for i in [-1, 0, 1]:
+        for j in [-1, 0, 1]:
+            if ((act[0] + i, act[1] + j) not in cerradas) and (i != 0 or j != 0) and (
+                    columns > act[0] + i >= 0 and rows > act[1] + j >= 0):
+                validas.append((act[0] + i, act[1] + j))
+    return validas
 
 
 def main():
