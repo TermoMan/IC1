@@ -112,22 +112,41 @@ def randomPos(rows, columns):
 
 def g(route, n):
     sum = 0
-    for r in route:
-
-
+    for r in range(1, len(route)):
+        sum += dist(route[r-1], route[r])
+    sum += dist(route[len(route)], n)
 
 def h(dest, n):
     return dist(dest, n)
 
 
-def f(n):
-    return g(n) + h(n)
+def f(n, route, dest):
+    return g(route, n) + h(dest, n)
 
 def dist (a, b):
     math.sqrt((a[0]-b[0])**2 + (a[1]-a[1])**2)
-def aEstrella(origin, objective, list_obs):
-    abierta = [origin]
+
+def aEstrella():
+    global origin, objetive, list_obs, route
+    abierta = [origin.pos]
     cerrada = list_obs
+    running = True
+    route.append(origin.pos)
+
+    while running:
+        list = zeldasValidas(abierta[len(abierta)-1], cerrada)
+        actBest = 100000
+        actPos = 0
+        for li in list:
+            a = f(li, route, objetive.pos)
+            if(a < actBest):
+                actBest = a
+                actPos = li
+        route.append(actPos)
+        if(origin.pos == objetive.pos): running = False
+    print(route)
+
+
 
 
 def zeldasValidas(act, cerradas):
@@ -141,8 +160,11 @@ def zeldasValidas(act, cerradas):
     return validas
 
 
+
+
+
 def main():
-    global width, height, rows, columns, origin, objetive, list_obs, play, start, quit, ori_btn, obj_btn, obs_btn
+    global width, height, rows, columns, origin, objetive, list_obs, play, start, quit, ori_btn, obj_btn, obs_btn, route
 
     cell_size = 25
     rows = 20
@@ -153,6 +175,7 @@ def main():
     start = pygame.Rect(width + 25, 25, 75, 25)
     quit = pygame.Rect(width + 25, 75, 75, 25)
     list_obs = []
+    route = []
 
     ori_btn = pygame.Rect(width + 25, 110, 75, 25)
     obj_btn = pygame.Rect(width + 25, 135, 75, 25)
@@ -189,6 +212,8 @@ def main():
                 if start.collidepoint(mouse_pos):
                     print("Start")
                     play = True
+                    aEstrella()
+
 
                 elif quit.collidepoint(mouse_pos):
                     print("quit")
