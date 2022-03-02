@@ -1,52 +1,37 @@
-import random
 import pygame
 import math
+import random
+from queue import PriorityQueue
+
+cell_size = 25
+rows = 20
+columns = 20
+height = cell_size * columns
+width = cell_size * rows
+win = pygame.display.set_mode((width + 200, height))
 
 
-class objetive(object):
-
-    def __init__(self, start, color=(255, 0, 0)):
-        self.pos = start
+class Cell:
+    def __init__(self, row, col, width, color=(0, 0, 0), eyes=False):
+        self.row = row
+        self.col = col
+        self.x = row * width
+        self.y = col * width
         self.color = color
+        self.neighbors = []
+        self.width = width
+        self.eyes = eyes
 
-    def move(self, pos):
-        self.pos = pos
+    def get_pos(self):
+        return self.row, self.col
 
     def draw(self, surface):
         global rows, columns, width, height
         dis = width // rows
-        i = self.pos[0]
-        j = self.pos[1]
-        pygame.draw.rect(surface, self.color, (i * dis + 1, j * dis + 1, dis - 2, dis - 2))
-
-
-class obstacle(object):
-
-    def __init__(self, pos, color):
-        self.pos = pos
-        self.color = color
-
-    def draw(self, surface):
-        global rows, columns, width, height
-        dis = width // rows
-        i = self.pos[0]
-        j = self.pos[1]
-        pygame.draw.rect(surface, self.color, (i * dis + 1, j * dis + 1, dis - 2, dis - 2))
-
-
-class origin(object):
-
-    def __init__(self, color, pos):
-        self.color = color
-        self.pos = pos
-
-    def draw(self, surface, eyes=True):
-        global rows, columns, width, height
-        dis = width // rows
-        i = self.pos[0]
-        j = self.pos[1]
-        pygame.draw.rect(surface, self.color, (i * dis + 1, j * dis + 1, dis - 2, dis - 2))
-        if eyes:
+        i = self.row
+        j = self.col
+        pygame.draw.rect(surface, self.color, (self.x, self.y, self.width, self.width))
+        if self.eyes:
             centre = dis // 2
             radius = 3
             circleMiddle = (i * dis + centre - radius, j * dis + 8)
@@ -54,197 +39,253 @@ class origin(object):
             pygame.draw.circle(surface, (0, 0, 0), circleMiddle, radius)
             pygame.draw.circle(surface, (0, 0, 0), circleMiddle2, radius)
 
-    def move(self, pos):
-        self.pos = pos
+    def update_neighbors(self, grid):
+        self.neighbors = []
+        if self.row < rows - 1 and not grid[self.row + 1][self.col].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row + 1][self.col])
+
+        if self.row > 0 and not grid[self.row - 1][self.col].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row - 1][self.col])
+
+        if self.col < rows - 1 and not grid[self.row][self.col + 1].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row][self.col + 1])
+
+        if self.col > 0 and not grid[self.row][self.col - 1].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row][self.col - 1])
+
+    def setColor(self, color):
+        self.color = color
+
+    def getColor(self):
+        return self.color
 
 
-def drawGrid(w, rows, columns, surface):
-    sizeBtwn = w // rows
-
-    x = 0
-    y = 0
-    pygame.draw.line(surface, (255, 255, 255), (x, 0), (x, w))
-    for l in range(rows):
-        x = x + sizeBtwn
-        pygame.draw.line(surface, (255, 255, 255), (x, 0), (x, w))
-
-    pygame.draw.line(surface, (255, 255, 255), (0, y), (w, y))
-    for l in range(columns):
-        y = y + sizeBtwn
-        pygame.draw.line(surface, (255, 255, 255), (0, y), (w, y))
-    y = y + sizeBtwn
-    pygame.draw.line(surface, (255, 255, 255), (0, y), (w, y))
+def h(a, b):
+    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - a[1]) ** 2)
 
 
-def redrawWindow(surface):
-    global rows, width, columns, origin, objetive, list_obs, start, quit, ori_btn, obj_btn, obs_btn
+def aEstrella(draw, grid, start, end):
+    count = 0
+    open_set = PriorityQueue()
+    open_set.put((0, count, start))
+    came_from = {}
+    g_score = {spot: float("inf") for row in grid for spot in row}
+    g_score[start] = 0
+    f_score = {spot: float("inf") for row in grid for spot in row}
+    f_score[start] = h(start.get_pos(), end.get_pos())
 
-    surface.fill((0, 0, 0))
-    origin.draw(surface)
-    objetive.draw(surface)
-    for ob in list_obs:
-        ob.draw(surface)
+    open_set_hash = {start}
 
-    pygame.draw.rect(surface, (200, 100, 100), start)
-    surface.blit(pygame.font.SysFont('calibri', 18).render("Empezar!", 1, (0, 0, 0)), (width + 30, 30))
+    while not open_set.empty():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
 
-    pygame.draw.rect(surface, (0, 100, 200), quit)
-    surface.blit(pygame.font.SysFont('calibri', 20).render("Salir", 1, (0, 0, 0)), (width + 30, 80))
+        current = open_set.get()[2]
+        open_set_hash.remove(current)
 
-    pygame.draw.rect(surface, (0, 200, 100), ori_btn)
-    surface.blit(pygame.font.SysFont('calibri', 20).render("Origin", 1, (0, 0, 0)), (width + 30, 115))
+        if current == end:
+            while end in came_from:
+                end = came_from[end]
+                end.setColor((128, 0, 128))
+                draw()
+            return True
 
-    pygame.draw.rect(surface, (0, 100, 100), obj_btn)
-    surface.blit(pygame.font.SysFont('calibri', 20).render("Objetive", 1, (0, 0, 0)), (width + 30, 140))
+        for neighbor in current.neighbors:
+            temp_g_score = g_score[current] + 1
 
-    pygame.draw.rect(surface, (100, 100, 100), obs_btn)
-    surface.blit(pygame.font.SysFont('calibri', 20).render("Obstacle", 1, (0, 0, 0)), (width + 30, 165))
+            if temp_g_score < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = temp_g_score
+                f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
+                if neighbor not in open_set_hash:
+                    count += 1
+                    open_set.put((f_score[neighbor], count, neighbor))
+                    open_set_hash.add(neighbor)
 
-    drawGrid(width, rows, columns, surface)
+        draw()
+    return False
+
+
+def make_grid(rows, width):
+    grid = []
+    gap = width // rows
+    for i in range(rows):
+        grid.append([])
+        for j in range(rows):
+            cell = Cell(i, j, gap)
+            grid[i].append(cell)
+
+    return grid
+
+
+def draw_grid(win, rows, width):
+    gap = width // rows
+    for i in range(rows):
+        pygame.draw.line(win, (128, 128, 128), (0, i * gap), (width, i * gap))
+        for j in range(rows):
+            pygame.draw.line(win, (128, 128, 128), (j * gap, 0), (j * gap, width))
+
+
+def redrawWindow(win, grid, rows, width):
+    win.fill((0, 0, 0))
+
+    for rw in grid:
+        for cl in rw:
+            cl.draw(win)
+
+    start = pygame.Rect(width + 25, 25, 75, 25)
+    quit = pygame.Rect(width + 25, 75, 75, 25)
+
+    ori_btn = pygame.Rect(width + 25, 110, 75, 25)
+    obj_btn = pygame.Rect(width + 25, 135, 75, 25)
+    obs_btn = pygame.Rect(width + 25, 160, 75, 25)
+    rst_btn = pygame.Rect(width + 25, 200, 75, 25)
+
+    pygame.draw.rect(win, (200, 100, 100), start)
+    win.blit(pygame.font.SysFont('calibri', 18).render("Empezar!", 1, (0, 0, 0)), (width + 30, 30))
+
+    pygame.draw.rect(win, (0, 100, 200), quit)
+    win.blit(pygame.font.SysFont('calibri', 20).render("Salir", 1, (0, 0, 0)), (width + 30, 80))
+
+    pygame.draw.rect(win, (0, 200, 100), ori_btn)
+    win.blit(pygame.font.SysFont('calibri', 20).render("Origin", 1, (0, 0, 0)), (width + 30, 115))
+
+    pygame.draw.rect(win, (0, 100, 100), obj_btn)
+    win.blit(pygame.font.SysFont('calibri', 20).render("Objetive", 1, (0, 0, 0)), (width + 30, 140))
+
+    pygame.draw.rect(win, (100, 100, 100), obs_btn)
+    win.blit(pygame.font.SysFont('calibri', 20).render("Obstacle", 1, (0, 0, 0)), (width + 30, 165))
+
+    pygame.draw.rect(win, (100, 200, 100), rst_btn)
+    win.blit(pygame.font.SysFont('calibri', 20).render("Reset", 1, (0, 0, 0)), (width + 30, 205))
+
+    draw_grid(win, rows, width)
     pygame.display.update()
 
+
+def get_clicked_pos(pos, rows, width):
+    gap = width // rows
+    y, x = pos
+    return y // gap, x // gap
+
+
+def reset(grid, start, end):
+    for rw in grid:
+        for cl in rw:
+            cl.setColor((0, 0, 0))
+
+    or_x, or_y = randomPos(rows, columns)
+    cell = grid[or_x][or_y]
+    cell.setColor((0, 255, 0))
+    cell.eyes = True
+    start = cell
+    start.row = or_x
+    start.col = or_y
+    ds_x, ds_y = randomPos(rows, columns)
+    cell = grid[ds_x][ds_y]
+    cell.setColor((0, 0, 255))
+    end = cell
+    end.pos = (ds_x, ds_y)
 
 def randomPos(rows, columns):
     x = random.randrange(rows)
     y = random.randrange(columns)
     return x, y
 
+def main(win, width):
+    grid = make_grid(rows, width)
+    pygame.init()
 
-def g(route, n):
-    sum = 0
-    for r in range(1, len(route)):
-        sum += dist(route[r-1], route[r])
-    sum += dist(route[len(route)], n)
+    or_x, or_y = randomPos(rows,columns)
+    cell = grid[or_x][or_y]
+    cell.setColor((0, 255, 0))
+    cell.eyes = True
+    start = cell
+    start.row = or_x
+    start.col = or_y
+    ds_x, ds_y = randomPos(rows, columns)
+    cell = grid[ds_x][ds_y]
+    cell.setColor((0, 0, 255))
+    end = cell
+    end.pos = (ds_x, ds_y)
 
-def h(dest, n):
-    return dist(dest, n)
-
-
-def f(n, route, dest):
-    return g(route, n) + h(dest, n)
-
-def dist (a, b):
-    math.sqrt((a[0]-b[0])**2 + (a[1]-a[1])**2)
-
-def aEstrella():
-    global origin, objetive, list_obs, route
-    abierta = [origin.pos]
-    cerrada = list_obs
-    running = True
-    route.append(origin.pos)
-
-    while running:
-        list = zeldasValidas(abierta[len(abierta)-1], cerrada)
-        actBest = 100000
-        actPos = 0
-        for li in list:
-            a = f(li, route, objetive.pos)
-            if(a < actBest):
-                actBest = a
-                actPos = li
-        route.append(actPos)
-        if(origin.pos == objetive.pos): running = False
-    print(route)
-
-
-
-
-def zeldasValidas(act, cerradas):
-    global rows, columns
-    validas = []
-    for i in [-1, 0, 1]:
-        for j in [-1, 0, 1]:
-            if ((act[0] + i, act[1] + j) not in cerradas) and (i != 0 or j != 0) and (
-                    columns > act[0] + i >= 0 and rows > act[1] + j >= 0):
-                validas.append((act[0] + i, act[1] + j))
-    return validas
-
-
-
-
-
-def main():
-    global width, height, rows, columns, origin, objetive, list_obs, play, start, quit, ori_btn, obj_btn, obs_btn, route
-
-    cell_size = 25
-    rows = 20
-    columns = 10
-    height = cell_size * columns
-    width = cell_size * rows
-
-    start = pygame.Rect(width + 25, 25, 75, 25)
+    starts = pygame.Rect(width + 25, 25, 75, 25)
     quit = pygame.Rect(width + 25, 75, 75, 25)
-    list_obs = []
-    route = []
-
     ori_btn = pygame.Rect(width + 25, 110, 75, 25)
     obj_btn = pygame.Rect(width + 25, 135, 75, 25)
     obs_btn = pygame.Rect(width + 25, 160, 75, 25)
-
-    origin = origin((0, 255, 0), randomPos(rows, columns))
-    objetive = objetive(randomPos(rows, columns), color=(0, 0, 255))
-    flag = True
-    play = False
+    rst_btn = pygame.Rect(width + 25, 200, 75, 25)
 
     ori = True
     obj = False
     obs = False
 
-    pygame.init()
-    win = pygame.display.set_mode((width + 200, height))
+    run = True
+    while run:
+        redrawWindow(win, grid, rows, width)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
 
-    clock = pygame.time.Clock()
+            if pygame.mouse.get_pressed()[0]:
+                pos = pygame.mouse.get_pos()
 
-    poss = [(1, 1), (1, 2), (1, 3)]
-
-    while flag:
-        pygame.time.delay(50)
-        clock.tick(10)
-
-        for ev in pygame.event.get():
-
-            if ev.type == pygame.QUIT:
-                flag = False
-                pygame.quit()
-
-            elif ev.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = ev.pos
-                if start.collidepoint(mouse_pos):
+                if starts.collidepoint(pos):
                     print("Start")
-                    play = True
-                    aEstrella()
+                    for row in grid:
+                        for cell in row:
+                            cell.update_neighbors(grid)
 
+                    aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, start, end)
 
-                elif quit.collidepoint(mouse_pos):
+                elif quit.collidepoint(pos):
                     print("quit")
                     flag = False
                     pygame.quit()
-                elif ori_btn.collidepoint(mouse_pos):
+                elif ori_btn.collidepoint(pos):
                     ori = True
                     obj = False
                     obs = False
-                elif obj_btn.collidepoint(mouse_pos):
+                elif obj_btn.collidepoint(pos):
                     ori = False
                     obj = True
                     obs = False
-                elif obs_btn.collidepoint(mouse_pos):
+                elif obs_btn.collidepoint(pos):
                     ori = False
                     obj = False
                     obs = True
+                elif rst_btn.collidepoint(pos):
+                    reset(grid, start, end)
                 else:
-                    print(mouse_pos[0] // cell_size, mouse_pos[1] // cell_size)
+                    print(pos[0] // cell_size, pos[1] // cell_size)
+                    row, col = get_clicked_pos(pos, rows, width)
+                    cell = grid[row][col]
                     if ori:
-                        origin.move((mouse_pos[0] // cell_size, mouse_pos[1] // cell_size))
+                        cell.setColor((0, 255, 0))
+                        cell.eyes = True
+                        if start is not None:
+                            start.eyer = False
+                            start.setColor((0, 0, 0))
+                        start = cell
                     elif obj:
-                        objetive.move((mouse_pos[0] // cell_size, mouse_pos[1] // cell_size))
+                        cell.setColor((0, 0, 255))
+                        if end is not None:
+                            end.setColor((0, 0, 0))
+                        end = cell
+
                     elif obs:
-                        list_obs.append(obstacle((mouse_pos[0] // cell_size, mouse_pos[1] // cell_size), (255, 0, 0)))
-        if play and poss:
-            origin.move(poss.pop())
-        if flag:
-            redrawWindow(win)
+                        cell.setColor((255, 0, 0))
 
-    pass
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and start and end:
+                    for row in grid:
+                        for cell in row:
+                            cell.update_neighbors(grid)
+
+                    aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, start, end)
+
+    pygame.quit()
 
 
-main()
+main(win, width)
