@@ -12,11 +12,11 @@ win = pygame.display.set_mode((width + 200, height))
 
 
 class Cell:
-    def __init__(self, row, col, width, color=(0, 0, 0), eyes=False):
+    def __init__(self, row, col, width = cell_size, color=(0, 0, 0), eyes=False):
         self.row = row
         self.col = col
-        self.x = row * width
-        self.y = col * width
+        self.x = row * cell_size
+        self.y = col * cell_size
         self.color = color
         self.neighbors = []
         self.width = width
@@ -39,16 +39,30 @@ class Cell:
             pygame.draw.circle(surface, (0, 0, 0), circleMiddle, radius)
             pygame.draw.circle(surface, (0, 0, 0), circleMiddle2, radius)
 
-    def update_neighbors(self, grid):
+    def zeldas_disponibles(self, grid):
+
         self.neighbors = []
+
+        if self.col < columns - 1 and self.row < rows - 1 and not grid[self.row + 1][self.col + 1].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row + 1][self.col + 1])
+
         if self.row < rows - 1 and not grid[self.row + 1][self.col].getColor() == (255, 0, 0):
             self.neighbors.append(grid[self.row + 1][self.col])
+
+        if self.col < columns - 1 and self.row > 0 and not grid[self.row - 1][self.col + 1].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row - 1][self.col + 1])
 
         if self.row > 0 and not grid[self.row - 1][self.col].getColor() == (255, 0, 0):
             self.neighbors.append(grid[self.row - 1][self.col])
 
-        if self.col < rows - 1 and not grid[self.row][self.col + 1].getColor() == (255, 0, 0):
+        if self.col > 0 and self.row > 0 and not grid[self.row - 1][self.col - 1].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row - 1][self.col - 1])
+
+        if self.col < columns - 1 and not grid[self.row][self.col + 1].getColor() == (255, 0, 0):
             self.neighbors.append(grid[self.row][self.col + 1])
+
+        if self.col > 0 and self.row < rows - 1 and not grid[self.row + 1][self.col - 1].getColor() == (255, 0, 0):
+            self.neighbors.append(grid[self.row + 1][self.col - 1])
 
         if self.col > 0 and not grid[self.row][self.col - 1].getColor() == (255, 0, 0):
             self.neighbors.append(grid[self.row][self.col - 1])
@@ -61,7 +75,12 @@ class Cell:
 
 
 def h(a, b):
-    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - a[1]) ** 2)
+    x1, y1 = a
+    x2, y2 = b
+    return abs(x1 - x2) + abs(y1 - y2)
+    #return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - a[1]) ** 2)
+    #return math.sqrt((a[1] - a[0]) ** 2 + (b[1] - b[0]) ** 2)
+
 
 
 def aEstrella(draw, grid, start, end):
@@ -77,9 +96,6 @@ def aEstrella(draw, grid, start, end):
     open_set_hash = {start}
 
     while not open_set.empty():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
 
         current = open_set.get()[2]
         open_set_hash.remove(current)
@@ -90,8 +106,10 @@ def aEstrella(draw, grid, start, end):
                 end.setColor((128, 0, 128))
                 draw()
             return True
+        current.zeldas_disponibles(grid)
 
         for neighbor in current.neighbors:
+            neighbor.setColor((255, 255, 0))
             temp_g_score = g_score[current] + 1
 
             if temp_g_score < g_score[neighbor]:
@@ -107,7 +125,7 @@ def aEstrella(draw, grid, start, end):
     return False
 
 
-def make_grid(rows, width):
+def create_grid(rows, width):
     grid = []
     gap = width // rows
     for i in range(rows):
@@ -123,8 +141,8 @@ def draw_grid(win, rows, width):
     gap = width // rows
     for i in range(rows):
         pygame.draw.line(win, (128, 128, 128), (0, i * gap), (width, i * gap))
-        for j in range(rows):
-            pygame.draw.line(win, (128, 128, 128), (j * gap, 0), (j * gap, width))
+    for j in range(rows):
+        pygame.draw.line(win, (128, 128, 128), (j * gap, 0), (j * gap, width))
 
 
 def redrawWindow(win, grid, rows, width):
@@ -180,6 +198,7 @@ def reset(grid, start, end):
     cell.setColor((0, 255, 0))
     cell.eyes = True
     start = cell
+    start = cell
     start.row = or_x
     start.col = or_y
     ds_x, ds_y = randomPos(rows, columns)
@@ -188,13 +207,16 @@ def reset(grid, start, end):
     end = cell
     end.pos = (ds_x, ds_y)
 
+
+
+
 def randomPos(rows, columns):
     x = random.randrange(rows)
     y = random.randrange(columns)
     return x, y
 
 def main(win, width):
-    grid = make_grid(rows, width)
+    grid = create_grid(rows, width)
     pygame.init()
 
     or_x, or_y = randomPos(rows,columns)
@@ -233,10 +255,6 @@ def main(win, width):
 
                 if starts.collidepoint(pos):
                     print("Start")
-                    for row in grid:
-                        for cell in row:
-                            cell.update_neighbors(grid)
-
                     aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, start, end)
 
                 elif quit.collidepoint(pos):
@@ -258,31 +276,28 @@ def main(win, width):
                 elif rst_btn.collidepoint(pos):
                     reset(grid, start, end)
                 else:
-                    print(pos[0] // cell_size, pos[1] // cell_size)
+                    #print(pos[0] // cell_size, pos[1] // cell_size)
                     row, col = get_clicked_pos(pos, rows, width)
-                    cell = grid[row][col]
-                    if ori:
-                        cell.setColor((0, 255, 0))
-                        cell.eyes = True
-                        if start is not None:
-                            start.eyer = False
-                            start.setColor((0, 0, 0))
-                        start = cell
-                    elif obj:
-                        cell.setColor((0, 0, 255))
-                        if end is not None:
-                            end.setColor((0, 0, 0))
-                        end = cell
+                    if row < rows and col < columns:
+                        cell = grid[row][col]
+                        if ori:
+                            cell.setColor((0, 255, 0))
+                            cell.eyes = True
+                            if start is not None:
+                                start.eyer = False
+                                start.setColor((0, 0, 0))
+                            start = cell
+                        elif obj:
+                            cell.setColor((0, 0, 255))
+                            if end is not None:
+                                end.setColor((0, 0, 0))
+                            end = cell
 
-                    elif obs:
-                        cell.setColor((255, 0, 0))
+                        elif obs:
+                            cell.setColor((255, 0, 0))
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and start and end:
-                    for row in grid:
-                        for cell in row:
-                            cell.update_neighbors(grid)
-
                     aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, start, end)
 
     pygame.quit()
