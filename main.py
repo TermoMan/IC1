@@ -106,6 +106,7 @@ def aEstrella(draw, grid, start, end):
                 end.setColor((128, 0, 128))
                 draw()
             return True
+
         current.zeldas_disponibles(grid)
 
         for neighbor in current.neighbors:
@@ -152,13 +153,14 @@ def redrawWindow(win, grid, rows, width):
         for cl in rw:
             cl.draw(win)
 
-    start = pygame.Rect(width + 25, 25, 75, 25)
-    quit = pygame.Rect(width + 25, 75, 75, 25)
+    start = pygame.Rect(width + 25, 25, 100, 25)
+    quit = pygame.Rect(width + 25, 75, 100, 25)
 
-    ori_btn = pygame.Rect(width + 25, 110, 75, 25)
-    obj_btn = pygame.Rect(width + 25, 135, 75, 25)
-    obs_btn = pygame.Rect(width + 25, 160, 75, 25)
-    rst_btn = pygame.Rect(width + 25, 200, 75, 25)
+    ori_btn = pygame.Rect(width + 25, 110, 100, 25)
+    obj_btn = pygame.Rect(width + 25, 135, 100, 25)
+    obs_btn = pygame.Rect(width + 25, 160, 100, 25)
+    wp_btn = pygame.Rect(width + 25, 185, 100, 25)
+    rst_btn = pygame.Rect(width + 25, 225, 100, 25)
 
     pygame.draw.rect(win, (200, 100, 100), start)
     win.blit(pygame.font.SysFont('calibri', 18).render("Empezar!", 1, (0, 0, 0)), (width + 30, 30))
@@ -175,8 +177,11 @@ def redrawWindow(win, grid, rows, width):
     pygame.draw.rect(win, (100, 100, 100), obs_btn)
     win.blit(pygame.font.SysFont('calibri', 20).render("Obstacle", 1, (0, 0, 0)), (width + 30, 165))
 
+    pygame.draw.rect(win, (255, 255, 255), wp_btn)
+    win.blit(pygame.font.SysFont('calibri', 20).render("Way Point", 1, (0, 0, 0)), (width + 30, 190))
+
     pygame.draw.rect(win, (100, 200, 100), rst_btn)
-    win.blit(pygame.font.SysFont('calibri', 20).render("Reset", 1, (0, 0, 0)), (width + 30, 205))
+    win.blit(pygame.font.SysFont('calibri', 20).render("Reset", 1, (0, 0, 0)), (width + 30, 230))
 
     draw_grid(win, rows, width)
     pygame.display.update()
@@ -232,16 +237,20 @@ def main(win, width):
     end = cell
     end.pos = (ds_x, ds_y)
 
-    starts = pygame.Rect(width + 25, 25, 75, 25)
-    quit = pygame.Rect(width + 25, 75, 75, 25)
-    ori_btn = pygame.Rect(width + 25, 110, 75, 25)
-    obj_btn = pygame.Rect(width + 25, 135, 75, 25)
-    obs_btn = pygame.Rect(width + 25, 160, 75, 25)
-    rst_btn = pygame.Rect(width + 25, 200, 75, 25)
+    wp_list = [start]
+
+    starts = pygame.Rect(width + 25, 25, 100, 25)
+    quit = pygame.Rect(width + 25, 75, 100, 25)
+    ori_btn = pygame.Rect(width + 25, 110, 100, 25)
+    obj_btn = pygame.Rect(width + 25, 135, 100, 25)
+    obs_btn = pygame.Rect(width + 25, 160, 100, 25)
+    wp_btn = pygame.Rect(width + 25, 185, 100, 25)
+    rst_btn = pygame.Rect(width + 25, 225, 100, 25)
 
     ori = True
     obj = False
     obs = False
+    wp = False
 
     run = True
     while run:
@@ -255,7 +264,10 @@ def main(win, width):
 
                 if starts.collidepoint(pos):
                     print("Start")
-                    aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, start, end)
+                    wp_list.append(end);
+                    print(len(wp_list))
+                    for i in range(1 , len(wp_list)):
+                        aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, wp_list[i-1], wp_list[i])
 
                 elif quit.collidepoint(pos):
                     print("quit")
@@ -265,14 +277,22 @@ def main(win, width):
                     ori = True
                     obj = False
                     obs = False
+                    wp = False
                 elif obj_btn.collidepoint(pos):
                     ori = False
                     obj = True
                     obs = False
+                    wp = False
                 elif obs_btn.collidepoint(pos):
                     ori = False
                     obj = False
                     obs = True
+                    wp = False
+                elif wp_btn.collidepoint(pos):
+                    ori = False
+                    obj = False
+                    obs = False
+                    wp = True
                 elif rst_btn.collidepoint(pos):
                     reset(grid, start, end)
                 else:
@@ -295,6 +315,9 @@ def main(win, width):
 
                         elif obs:
                             cell.setColor((255, 0, 0))
+                        elif wp:
+                            cell.setColor((255, 255, 255))
+                            wp_list.append(cell)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and start and end:
