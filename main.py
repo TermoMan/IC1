@@ -77,9 +77,9 @@ class Cell:
 def h(a, b):
     x1, y1 = a
     x2, y2 = b
-    return abs(x1 - x2) + abs(y1 - y2)
+    #return abs(x1 - x2) + abs(y1 - y2)
     #return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - a[1]) ** 2)
-    #return math.sqrt((a[1] - a[0]) ** 2 + (b[1] - b[0]) ** 2)
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 
 
@@ -194,9 +194,11 @@ def get_clicked_pos(pos, rows, width):
 
 
 def reset(grid, start, end):
-    for rw in grid:
-        for cl in rw:
-            cl.setColor((0, 0, 0))
+    #for rw in grid:
+    #    for cl in rw:
+    #        cl.setColor((0, 0, 0))
+
+    grid = create_grid(rows, width)
 
     or_x, or_y = randomPos(rows, columns)
     cell = grid[or_x][or_y]
@@ -266,6 +268,7 @@ def main(win, width):
                     print("Start")
                     wp_list.append(end);
                     print(len(wp_list))
+
                     for i in range(1 , len(wp_list)):
                         aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, wp_list[i-1], wp_list[i])
 
@@ -294,7 +297,25 @@ def main(win, width):
                     obs = False
                     wp = True
                 elif rst_btn.collidepoint(pos):
-                    reset(grid, start, end)
+                    #reset(grid, start, end)
+
+                    for rw in grid:
+                        for cl in rw:
+                            cl.setColor((0, 0, 0))
+                    or_x, or_y = randomPos(rows, columns)
+                    cell = grid[or_x][or_y]
+                    cell.setColor((0, 255, 0))
+                    cell.eyes = True
+                    start = cell
+                    start = cell
+                    start.row = or_x
+                    start.col = or_y
+                    ds_x, ds_y = randomPos(rows, columns)
+                    cell = grid[ds_x][ds_y]
+                    cell.setColor((0, 0, 255))
+                    end = cell
+                    end.pos = (ds_x, ds_y)
+                    wp_list = [start]
                 else:
                     #print(pos[0] // cell_size, pos[1] // cell_size)
                     row, col = get_clicked_pos(pos, rows, width)
