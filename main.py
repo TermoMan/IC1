@@ -110,7 +110,8 @@ def aEstrella(draw, grid, start, end):
         current.zeldas_disponibles(grid)
 
         for neighbor in current.neighbors:
-            neighbor.setColor((255, 255, 0))
+            if neighbor.color != (128, 0, 128):
+                neighbor.setColor((255, 255, 0))
             temp_g_score = g_score[current] + 1
 
             if temp_g_score < g_score[neighbor]:
