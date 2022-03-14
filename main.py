@@ -77,53 +77,54 @@ class Cell:
 def h(a, b):
     x1, y1 = a
     x2, y2 = b
-    #return abs(x1 - x2) + abs(y1 - y2)
+    return abs(x1 - x2) + abs(y1 - y2)
     #return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - a[1]) ** 2)
-    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    #return math.sqrt((a[1] - a[0]) ** 2 + (b[1] - b[0]) ** 2)
 
 
 
 def aEstrella(draw, grid, start, end):
     count = 0
-    open_set = PriorityQueue()
-    open_set.put((0, count, start))
+    open = PriorityQueue()
+    open.put((0, count, start))
     came_from = {}
-    g_score = {spot: float("inf") for row in grid for spot in row}
-    g_score[start] = 0
-    f_score = {spot: float("inf") for row in grid for spot in row}
-    f_score[start] = h(start.get_pos(), end.get_pos())
+    g = {spot: float("inf") for row in grid for spot in row}
+    g[start] = 0
+    f = {spot: float("inf") for row in grid for spot in row}
+    f[start] = h(start.get_pos(), end.get_pos())
+    acum = 0
+    openID = {start}
 
-    open_set_hash = {start}
+    while not open.empty():
 
-    while not open_set.empty():
+        act = open.get()[2]
+        openID.remove(act)
 
-        current = open_set.get()[2]
-        open_set_hash.remove(current)
-
-        if current == end:
+        if act == end:
             while end in came_from:
+                acum += 1
                 end = came_from[end]
                 end.setColor((128, 0, 128))
                 draw()
-            return True
+            return acum
 
-        current.zeldas_disponibles(grid)
+        act.zeldas_disponibles(grid)
 
-        for neighbor in current.neighbors:
-            neighbor.setColor((255, 255, 0))
-            temp_g_score = g_score[current] + 1
+        for next in act.neighbors:
+            next.setColor((255, 255, 0))
+            temp_g = g[act] + 1
 
-            if temp_g_score < g_score[neighbor]:
-                came_from[neighbor] = current
-                g_score[neighbor] = temp_g_score
-                f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
-                if neighbor not in open_set_hash:
+            if g[next] > temp_g:
+                came_from[next] = act
+                g[next] = temp_g
+                f[next] = temp_g + h(next.get_pos(), end.get_pos())
+                if next not in openID:
                     count += 1
-                    open_set.put((f_score[neighbor], count, neighbor))
-                    open_set_hash.add(neighbor)
+                    open.put((f[next], count, next))
+                    openID.add(next)
 
         draw()
-    return False
+    return -1
 
 
 def create_grid(rows, width):
@@ -171,10 +172,10 @@ def redrawWindow(win, grid, rows, width):
     pygame.draw.rect(win, (0, 200, 100), ori_btn)
     win.blit(pygame.font.SysFont('calibri', 20).render("Origin", 1, (0, 0, 0)), (width + 30, 115))
 
-    pygame.draw.rect(win, (0, 100, 100), obj_btn)
+    pygame.draw.rect(win, (0, 0, 255), obj_btn)
     win.blit(pygame.font.SysFont('calibri', 20).render("Objetive", 1, (0, 0, 0)), (width + 30, 140))
 
-    pygame.draw.rect(win, (100, 100, 100), obs_btn)
+    pygame.draw.rect(win, (255, 0, 0), obs_btn)
     win.blit(pygame.font.SysFont('calibri', 20).render("Obstacle", 1, (0, 0, 0)), (width + 30, 165))
 
     pygame.draw.rect(win, (255, 255, 255), wp_btn)
@@ -194,17 +195,14 @@ def get_clicked_pos(pos, rows, width):
 
 
 def reset(grid, start, end):
-    #for rw in grid:
-    #    for cl in rw:
-    #        cl.setColor((0, 0, 0))
-
-    grid = create_grid(rows, width)
+    for rw in grid:
+        for cl in rw:
+            cl.setColor((0, 0, 0))
 
     or_x, or_y = randomPos(rows, columns)
     cell = grid[or_x][or_y]
     cell.setColor((0, 255, 0))
     cell.eyes = True
-    start = cell
     start = cell
     start.row = or_x
     start.col = or_y
@@ -231,16 +229,13 @@ def main(win, width):
     cell.setColor((0, 255, 0))
     cell.eyes = True
     start = cell
-    start.row = or_x
-    start.col = or_y
     ds_x, ds_y = randomPos(rows, columns)
     cell = grid[ds_x][ds_y]
     cell.setColor((0, 0, 255))
     end = cell
-    end.pos = (ds_x, ds_y)
 
     wp_list = [start]
-
+    sum = 0
     starts = pygame.Rect(width + 25, 25, 100, 25)
     quit = pygame.Rect(width + 25, 75, 100, 25)
     ori_btn = pygame.Rect(width + 25, 110, 100, 25)
@@ -266,11 +261,10 @@ def main(win, width):
 
                 if starts.collidepoint(pos):
                     print("Start")
-                    wp_list.append(end);
-                    print(len(wp_list))
-
+                    wp_list.append(end)
                     for i in range(1 , len(wp_list)):
-                        aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, wp_list[i-1], wp_list[i])
+                        sum += aEstrella(lambda: redrawWindow(win, grid, rows, width), grid, wp_list[i-1], wp_list[i])
+                    print("Ha recorrido: "+str(sum))
 
                 elif quit.collidepoint(pos):
                     print("quit")
@@ -297,16 +291,14 @@ def main(win, width):
                     obs = False
                     wp = True
                 elif rst_btn.collidepoint(pos):
-                    #reset(grid, start, end)
-
                     for rw in grid:
                         for cl in rw:
                             cl.setColor((0, 0, 0))
+
                     or_x, or_y = randomPos(rows, columns)
                     cell = grid[or_x][or_y]
                     cell.setColor((0, 255, 0))
                     cell.eyes = True
-                    start = cell
                     start = cell
                     start.row = or_x
                     start.col = or_y
@@ -317,7 +309,6 @@ def main(win, width):
                     end.pos = (ds_x, ds_y)
                     wp_list = [start]
                 else:
-                    #print(pos[0] // cell_size, pos[1] // cell_size)
                     row, col = get_clicked_pos(pos, rows, width)
                     if row < rows and col < columns:
                         cell = grid[row][col]
@@ -328,12 +319,12 @@ def main(win, width):
                                 start.eyer = False
                                 start.setColor((0, 0, 0))
                             start = cell
+                            wp_list[0] =start
                         elif obj:
                             cell.setColor((0, 0, 255))
                             if end is not None:
                                 end.setColor((0, 0, 0))
                             end = cell
-
                         elif obs:
                             cell.setColor((255, 0, 0))
                         elif wp:
