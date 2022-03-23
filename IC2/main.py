@@ -6,12 +6,33 @@ class Node(object):
     def __init__(self):
         self.data = ""
         self.children = []
+        self.parent = None
+
+    def set_parent(self, parent):
+        self.parent = parent
 
     def add_child(self, obj):
         self.children.append(obj)
 
     def add_data(self, data):
         self.data = data
+
+    def get_level(self):
+        level = 0
+        p = self.parent
+        while p:
+            level += 1
+            p = p.parent
+
+        return level
+
+    def print_tree(self):
+        spaces = ' ' * self.get_level() * 3
+        prefix = spaces + "|__" if self.parent else ""
+        print(prefix + self.data)
+        if self.children:
+            for child in self.children:
+                child.print_tree()
 
 
 def infor(p, n):
@@ -63,6 +84,7 @@ def id3(arbol, lista_ejemplos, lista_atributos):
         lista_atributos.remove(best)
         for act in lista_ejemplos[best].unique():
             chld = Node()
+            chld.set_parent(arbol)
             arbol.add_child(chld)
             ejemplos_restantes = lista_ejemplos.drop(lista_ejemplos[lista_ejemplos[best] != act].index)
             id3(chld, ejemplos_restantes, lista_atributos)
@@ -80,7 +102,7 @@ def main():
     arbol = Node()
 
     id3(arbol, lista_ejemplos, lista_atributos)
-    print()
+    arbol.print_tree()
 
 
 main()
