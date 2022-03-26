@@ -68,17 +68,19 @@ def mejorElem(lista_ejemplos, lista_atributos):
 
 def id3(arbol, lista_ejemplos, lista_atributos):
     if lista_ejemplos.empty:
-        return
+        arbol.add_data("empty")
+        return "empty"
     elif lista_ejemplos['Jugar'].eq("no").all():
-        arbol.add_data("+")
-        return "+"
-    elif lista_ejemplos['Jugar'].eq("si").all():
         arbol.add_data("-")
         return "-"
+    elif lista_ejemplos['Jugar'].eq("si").all():
+        arbol.add_data("+")
+        return "+"
     elif not lista_atributos:
         print("error")
         return "error"
     else:
+        
         best = mejorElem(lista_ejemplos, lista_atributos)
         arbol.add_data(best)
         lista_atributos.remove(best)
@@ -88,6 +90,7 @@ def id3(arbol, lista_ejemplos, lista_atributos):
             arbol.add_child(chld)
             ejemplos_restantes = lista_ejemplos.drop(lista_ejemplos[lista_ejemplos[best] != act].index)
             id3(chld, ejemplos_restantes, lista_atributos)
+
 
 
 def main():
