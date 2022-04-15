@@ -2,7 +2,6 @@ import pandas as pd
 import math
 
 
-
 def k_medios(X, v, toleranciaKM, pesoExponencialKM):
     ready = False
     while not ready:
@@ -23,10 +22,10 @@ def centCalc(X, v, toleranciaKM, pesoExponencialKM):
             d = 0.0
             for i in range(len(c)):
                 d += math.pow(c[i] - m[i], 2);
-            ds.append(math.pow(1/d, 1/(pesoExponencialKM-1)))
-            acum += math.pow(1/d, 1/(pesoExponencialKM-1));
+            ds.append(math.pow(1 / d, 1 / (pesoExponencialKM - 1)))
+            acum += math.pow(1 / d, 1 / (pesoExponencialKM - 1));
         for r in range(len(v)):
-            u[r][mNum] = ds[r]/acum
+            u[r][mNum] = ds[r] / acum
         mNum += 1
 
     for i in range(len(v)):
@@ -44,7 +43,7 @@ def centCalc(X, v, toleranciaKM, pesoExponencialKM):
         acumC = 0.0
         for k in range(len(values)):
             w = values[k]
-            w = w/acumB
+            w = w / acumB
             acumC += abs(w - v[i][k])
             values[k] = w
         v[i] = values
@@ -52,15 +51,62 @@ def centCalc(X, v, toleranciaKM, pesoExponencialKM):
             ready = False
     return ready
 
-def clasificacionKM(muestra, v, dic):
+
+def lloyd(X, v, toleranciaL, iteracionesMaxL, razonAprendizajeL):
+    ready = False
+    iter = 0
+    while not ready:
+        iter = iter + 1
+        centrosPrevios = v.copy()
+
+        for index, m in X.iterrows():
+            ganador = competicion(m, v)
+            actualizaCentro(ganador, index, X, v, razonAprendizajeL)
+
+        ready = calcTolerancia(v, centrosPrevios, toleranciaL)
+        if iter == iteracionesMaxL:
+            ready = True
+
+
+def competicion(punto, v):
+    indiceMejor = 0
+    menorDist = distancia(punto, v[0])
+    for j in range(len(v)):
+        dist = distancia(punto, v[j])
+        if dist < menorDist:
+            menorDist = dist
+            indiceMejor = j
+    return indiceMejor
+
+
+def distancia(punto, centro):
+    distancia = 0
+    for i in range(len(punto)):
+        distancia += math.pow(punto[i] - centro[i], 2)
+    return math.sqrt(distancia)
+
+
+def actualizaCentro(iCentro, iPunto, X, v, razonAprendizajeL):
+    for j in range(len(v[iCentro])):
+        v[iCentro][j] = v[iCentro][j] + razonAprendizajeL * (X[j][iPunto] - v[iCentro][j])
+
+
+def calcTolerancia(v, centrosPrevios, toleranciaL):
+    for i in range(len(v)):
+        if distancia(v[i], centrosPrevios[i]) >= toleranciaL:
+            return False
+    return True
+
+
+def clasificacion(muestra, v, dic):
     acumulados = []
     acumD = 0.0
     for i in range(len(v)):
         acumA = 0.0
         for k in range(len(muestra)):
             acumA += math.pow(muestra[k] - v[i][k], 2)
-        acumD += 1/acumA
-        acumulados.append(1/acumA)
+        acumD += 1 / acumA
+        acumulados.append(1 / acumA)
     max = 0.0
     indMax = -1
     for i in range(len(acumulados)):
@@ -71,8 +117,8 @@ def clasificacionKM(muestra, v, dic):
             max = d
             indMax = i
     if indMax != -1:
-        print("Predecimos que la muestra pertenece a la clase: " + str(dic[indMax])+"("+str(indMax)+")\t\tLa clase a la que debería pertenecer es: " +muestra[4][0])
-
+        print("Predecimos que la muestra pertenece a la clase: " + str(dic[indMax]) + "(" + str(
+            indMax) + ")\t\tLa clase a la que debería pertenecer es: " + muestra[4][0])
 
 
 def main():
@@ -88,13 +134,13 @@ def main():
     y2 = pd.read_csv('TestIris02.txt', sep=",", header=None)
     y3 = pd.read_csv('TestIris03.txt', sep=",", header=None)
 
-    v = [[4.6, 3.0, 4.0, 0.0],
-         [6.8, 3.4, 4.6, 0.7]]
+    vOriginales = [[4.6, 3.0, 4.0, 0.0],
+                   [6.8, 3.4, 4.6, 0.7]]
 
     toleranciaKM = 0.01
     pesoExponencialKM = 2
 
-    toleranciaL = math.pow(10,-10)
+    toleranciaL = math.pow(10, -10)
     iteracionesMaxL = 10
     razonAprendizajeL = 0.1
 
@@ -106,10 +152,17 @@ def main():
     ## Consideramos que un centro se actualiza cuando K T α ( ) k > , siendo T = 10^-5
     T = math.pow(10, -5)
 
-    k_medios(X, v, toleranciaKM, pesoExponencialKM)
-    clasificacionKM(y1, v, dic)
-    clasificacionKM(y2, v, dic)
-    clasificacionKM(y3, v, dic)
+    #vKm = vOriginales.copy()
+    #k_medios(X, vKm, toleranciaKM, pesoExponencialKM)
+    #clasificacion(y1, vKm, dic)
+    #clasificacion(y2, vKm, dic)
+    #clasificacion(y3, vKm, dic)
+
+    vL = vOriginales.copy()
+    lloyd(X, vL, toleranciaL, iteracionesMaxL, razonAprendizajeL)
+    clasificacion(y1, vL, dic)
+    clasificacion(y2, vL, dic)
+    clasificacion(y3, vL, dic)
 
 
 main()
