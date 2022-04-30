@@ -1,13 +1,12 @@
+import pandas
 import pandas as pd
 import math
-
+import numpy as np
 
 def k_medios(X, v, toleranciaKM, pesoExponencialKM):
     ready = False
     while not ready:
         ready = centCalc(X, v, toleranciaKM, pesoExponencialKM)
-    for i in range(len(v)):
-        print(str(v[i]))
 
 
 def centCalc(X, v, toleranciaKM, pesoExponencialKM):
@@ -121,6 +120,35 @@ def clasificacion(muestra, v, dic):
             indMax) + ")\t\tLa clase a la que debería pertenecer es: " + muestra[4][0])
 
 
+def bayes(X, y):
+    x1 = X[y == 'Iris-setosa']
+    x2 = X[y == 'Iris-versicolor']
+    m1 = x1.mean()
+    C1 = x1.cov()
+    m2 = x2.mean()
+    C2 = x2.cov()
+    return m1, C1, m2, C2
+
+
+def bayesClasificador(punto, w):
+    m1, C1, m2, C2 = w
+    p1 = probBayes(punto, m1, C1)
+    p2 = probBayes(punto, m2, C2)
+    if (p1 > p2):
+        print("Predecimos que la muestra pertenece a la clase: Iris-setosa. La clase a la que deberia pertenecer es " +
+              punto[4][0])
+    else:
+        print(
+            "Predecimos que la muestra pertenece a la clase: Iris-versicolor. La clase a la que deberia pertenecer es " +
+            punto[4][0])
+
+
+def probBayes(punto, m, c):
+    aux = punto.loc[0][:4] - m
+    fraccion = 1 / (math.pow(2 * math.pi, 2) * math.pow(np.linalg.det(c.to_numpy()), 1 / 2))
+    exponente = math.exp((-1 / 2) * np.matmul(np.matmul(aux.transpose(), np.linalg.inv(c.to_numpy())), aux))
+    return fraccion * exponente
+
 def main():
     Xy = pd.read_csv('Iris2Clases.txt', sep=",", header=None)
     y = Xy[4]
@@ -152,12 +180,20 @@ def main():
     ## Consideramos que un centro se actualiza cuando K T α ( ) k > , siendo T = 10^-5
     T = math.pow(10, -5)
 
-    #vKm = vOriginales.copy()
-    #k_medios(X, vKm, toleranciaKM, pesoExponencialKM)
-    #clasificacion(y1, vKm, dic)
-    #clasificacion(y2, vKm, dic)
-    #clasificacion(y3, vKm, dic)
+    print("\nKMeans:")
+    vKm = vOriginales.copy()
+    k_medios(X, vKm, toleranciaKM, pesoExponencialKM)
+    clasificacion(y1, vKm, dic)
+    clasificacion(y2, vKm, dic)
+    clasificacion(y3, vKm, dic)
 
+    print("\nBayes:")
+    w = bayes(X, y)
+    bayesClasificador(y1, w)
+    bayesClasificador(y2, w)
+    bayesClasificador(y3, w)
+
+    print("\nLloyd:")
     vL = vOriginales.copy()
     lloyd(X, vL, toleranciaL, iteracionesMaxL, razonAprendizajeL)
     clasificacion(y1, vL, dic)
